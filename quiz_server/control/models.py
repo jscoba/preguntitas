@@ -1,11 +1,17 @@
-from django.db import models
 from django.urls import reverse
 from django.db import models
 from django.utils.translation import gettext as _ 
+from django.contrib.auth.models import User
 
 # Create your models here.
 
 class MultipleCorrectAnswers(BaseException):
+    pass
+
+class MultipleVotes(BaseException):
+    pass
+
+class DeadPlayer(BaseException):
     pass
 
 class Game(models.Model):
@@ -74,3 +80,26 @@ class Answer_option(models.Model):
 
     def get_absolute_url(self):
         return reverse("answer_option_detail", kwargs={"pk": self.pk})
+
+class Vote(models.Model):
+
+    user = models.ForeignKey(User, verbose_name=_("User"), on_delete=models.CASCADE)
+    answer_option = models.ForeignKey("Answer_option", verbose_name=_("Answer_option"), on_delete=models.CASCADE)
+    vote_time = models.DateTimeField(_("Fecha de voto"), auto_now=False, auto_now_add=True)
+
+    def save(self, *args, **kwargs) -> None:
+        if(Vote.objects.filter(answer_option__question=self.answer_option.question, user = self.user).count() != 0):
+            raise MultipleVotes
+        if (Vote.objects.filter(answer_option__is_correct=False, user=self.user, answer_option__question__game=self.answer_option.question.game).count() != 0):
+            raise DeadPlayer
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = _("vote")
+        verbose_name_plural = _("votes")
+
+    def __str__(self):
+        return "User %s voted %s\n" % self.user, self.answer_option
+
+    def get_absolute_url(self):
+        return reverse("vote_detail", kwargs={"pk": self.pk})
