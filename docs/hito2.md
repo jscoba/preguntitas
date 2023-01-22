@@ -1,0 +1,9 @@
+# Documentación Hito 2 - Tests
+
+Para poder desarrollar el proyecto usando la metodología TDD ([Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development)) tenemos que elegir un marco de trabajo para escribir y ejecutar los tests. Además tenemos que tener un gestor de tareas que nos permita ejecutar dichos test (y otras tareas relacionadas con el proyecto como la compilación o el despliegue) de forma unificada.
+
+En este proyecto vamos a utilizar, principalmente python para el desarrollo. En python existen dos grandes herramientas para el desarrollo de tests: `pytest` y `unittest`. Aunque ambas herramientas tienen funciones similares no son compatibles entre si, por lo que debemos elegir una de ellas. En nuestro caso nos decantamos por usar `unittest`. Esto se debe a que estamos trabajando con Django como framework web y este ya lleva una serie de test integrados. Además Django [nos provee de una capa sobre `unittest`](https://docs.djangoproject.com/en/4.1/topics/testing/overview/) que nos facilita la tarea de escribir tests que necesitan usar la base de datos (para probar modelos de datos).
+
+Otra ventaja de `unittest` es que es parte de la librería estándar de python, por lo que no tenemos que instalar ninguna dependencia adicional del proyecto para ejecutar las pruebas del mismo.
+
+A la hora de ejecutar estos tests Django provee una utilidad de ejecución usando su script `manage.py`. Sin embargo para poder utilizarlo hay que instalar en primer lugar el propio Django. Es por esto que preferimos usar `make` como gestor de tareas del proyecto. Creando un archivo Makefile podremos automatizar la instalación de las dependencias del proyecto así como la ejecución de las pruebas del mismo (y posteriormente el despligue de la aplicación). 

@@ -1,1 +1,4 @@
 entidad: quiz_server/control/models.py
+lenguaje: python
+test: quiz_server/control/tests.py
+fichero_tareas: Makefile 

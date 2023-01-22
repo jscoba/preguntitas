@@ -10,3 +10,4 @@ Este es un listado de los artículos de documentación del proyecto (in english)
 Este es un listado de la documentación requerida por la asignatura Cloud Computing:
 
 - [Documentación Hito 0](https://github.com/jscoba/preguntitas/blob/master/docs/hito0.md)
+- [Documentación Hito 2](https://github.com/jscoba/preguntitas/blob/master/docs/hito2.md)
