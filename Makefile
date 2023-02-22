@@ -8,4 +8,4 @@ installdeps: install-deps-server
 	@echo "Dependencies installed"
 
 install-deps-server: 
-	pip install -R quiz_server/requirements.txt
+	pip install -r quiz_server/requirements.txt

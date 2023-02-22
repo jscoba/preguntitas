@@ -3,6 +3,12 @@ from django.contrib.auth.models import User
 from control.models import *
 from django.test import override_settings
 
+from channels.testing import WebsocketCommunicator
+from channels.db import database_sync_to_async
+from channels.auth import AuthMiddlewareStack
+from control.consumers import ControlConsumer
+from player.consumers import PlayerConsumer
+
 # Create your tests here.
 
 class VotesSecurity(TestCase):
@@ -52,3 +58,46 @@ class VotesSecurity(TestCase):
         with self.assertRaises(DeadPlayer):
             ao2 = Answer_option.objects.filter(question=q2).first()
             vote2 = Vote.objects.create(user=u1, answer_option = ao2)
+
+
+    async def test_player_connections(self):
+        control = WebsocketCommunicator(ControlConsumer.as_asgi(), "/ws/consumer_control/")
+        u1 = await database_sync_to_async(lambda: User.objects.get(username='u1'))()
+        await database_sync_to_async(self.client.force_login)(u1)
+
+        headers = [(b'origin', b'...'), (b'cookie', self.client.cookies.output(header='', sep='; ').encode())]
+        player = WebsocketCommunicator(AuthMiddlewareStack(PlayerConsumer.as_asgi()), "/ws/consumer_player/", headers)
+        await control.connect()
+        #requested_info = await control.receive_json_from()
+        #assert(requested_info["type"] == 'requestedInfo')
+        await player.connect()
+        player_connected = await control.receive_json_from()
+        print(player_connected)
+        assert(player_connected == {'type': "newPlayerJoined"})
+
+        await player.disconnect()
+        player_disconnected = await control.receive_json_from()
+        assert(player_disconnected == {'type' : 'playerLeft'})
+        await control.disconnect()
+
+    async def test_show_next_question(self):
+        control = WebsocketCommunicator(ControlConsumer.as_asgi(), "/ws/consumer_control/")
+        u1 = await database_sync_to_async(lambda: User.objects.get(username='u1'))()
+        await database_sync_to_async(self.client.force_login)(u1)
+
+        headers = [(b'origin', b'...'), (b'cookie', self.client.cookies.output(header='', sep='; ').encode())]
+        player = WebsocketCommunicator(AuthMiddlewareStack(PlayerConsumer.as_asgi()), "/ws/consumer_player/", headers)
+        await control.connect()
+        #requested_info = await control.receive_json_from()
+        #assert(requested_info["type"] == 'requestedInfo')
+        await player.connect()
+        await control.receive_json_from()
+
+        await control.receive_nothing()
+
+        await control.send_json_to({'type' : 'nextQuestion', 'questionId' : 1})
+
+        question_message = await player.receive_json_from()
+        print(question_message)
+        assert(question_message)
+        

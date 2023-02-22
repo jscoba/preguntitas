@@ -33,8 +33,8 @@ class ControlConsumer(AsyncWebsocketConsumer):
         )
 
     # Receive message from WebSocket
-    async def receive(self, message_data):
-        message_data_json = json.loads(message_data)
+    async def receive(self, text_data):
+        message_data_json = json.loads(text_data)
         message_type = message_data_json['type']
 
         if (message_type == "livePlayerStats"):
@@ -56,16 +56,16 @@ class ControlConsumer(AsyncWebsocketConsumer):
         elif (message_type == "nextQuestion"):
             
             question_id = message_data_json['questionId']
-            answers_json = serializers.serialize("json",Answer_option.objects.filter(question__id=question_id), fields=("id", "answer_option_text"))
-            question_text = await database_sync_to_async(Question.objects.filter(id=question_id).first())
+            answers_json = await database_sync_to_async(lambda: serializers.serialize("json",Answer_option.objects.filter(question__id=question_id), fields=("id", "answer_option_text")))()
+            question_text = await database_sync_to_async(lambda: Question.objects.filter(id=question_id).first())()
 
             await self.channel_layer.group_send(
                 self.player_group,
                 {
-                    'type' : "question",
+                    'type' : "nextQuestion",
                     'question' : {
                         'questionId' : question_id,
-                        'questionText' : question_text,
+                        'questionText' : question_text.question_text,
                         'answerOptions' : answers_json
                     }
                 }
@@ -82,14 +82,15 @@ class ControlConsumer(AsyncWebsocketConsumer):
         elif (message_type == "showQuestionResult"):
             
             question_id = message_data_json['questionId']
-            answers = await database_sync_to_async(Answer_option.objects.filter(question__id=question_id).values("id", "is_correct"))
-            question_text = await database_sync_to_async(Question.objects.filter(id=question_id).first())
-            answers_list = list(answers)
+            answers = await database_sync_to_async(lambda: Answer_option.objects.filter(question__id=question_id).values("id", "is_correct"))()
+            question_text = await database_sync_to_async(lambda : Question.objects.filter(id=question_id).first())()
+            answers_list = await database_sync_to_async( lambda: list(answers)) ()
             json_list_dict = []
             fields=['answerOptionId', 'isCorrect', 'AnswerOptionVotes']
-
+            print(answers_list)
             for a in answers_list:
-                numVotos = await database_sync_to_async(Vote.objects.filter(answer_option__id=a[0]).count())
+                a = list(a.values())
+                numVotos = await database_sync_to_async(lambda: Vote.objects.filter(answer_option__id=a[0]).count())()
                 a.append(numVotos)
                 json_list_dict.append(dict(zip(fields,a)))
 
@@ -105,8 +106,8 @@ class ControlConsumer(AsyncWebsocketConsumer):
         elif (message_type == "actualScoreBoard"):
 
             votes_actual_game = Count('vote', filter=Q(vote__answer_option__question__game__is_active=True, vote_set__answer_option__is_correct=True))
-            user_correct_votes = await database_sync_to_async(User.objects.annotate(votes=votes_actual_game).order_by("-votes").values("name", "votes"))
-            values = list(user_correct_votes)
+            user_correct_votes = await database_sync_to_async(lambda: User.objects.annotate(votes=votes_actual_game).order_by("-votes").values("name", "votes"))()
+            values = await database_sync_to_async(lambda:list(user_correct_votes))()
             json_list_dict = []
             fields = ['showName', 'points']
 
@@ -125,8 +126,8 @@ class ControlConsumer(AsyncWebsocketConsumer):
         elif (message_type == "generalScoreBoard"):
 
             votes_actual_game = Count('vote', filter=Q(vote_set__answer_option__is_correct=True))
-            user_correct_votes = await database_sync_to_async(User.objects.annotate(votes=votes_actual_game).order_by("-votes").values("name", "votes"))
-            values = list(user_correct_votes)
+            user_correct_votes = await database_sync_to_async(lambda: User.objects.annotate(votes=votes_actual_game).order_by("-votes").values("name", "votes"))()
+            values = await database_sync_to_async(lambda:list(user_correct_votes))()
             json_list_dict = []
             fields = ['showName', 'points']
             

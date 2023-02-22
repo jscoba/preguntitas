@@ -44,19 +44,19 @@ class PlayerConsumer(AsyncWebsocketConsumer):
         )
 
     # Receive message from WebSocket
-    async def receive(self, message_data):
-        message_data_json = json.loads(message_data)
+    async def receive(self, text_data):
+        message_data_json = json.loads(text_data)
         message_type = message_data_json['type']
 
         if (message_type == "vote"):
 
             answer_id = message_data_json['answerOptionId']
             
-            answer = await database_sync_to_async(Answer_option.objects.filter(id=answer_id).first())
+            answer = await database_sync_to_async(lambda:Answer_option.objects.filter(id=answer_id).first())()
 
             try:
                 new_vote = Vote(user=self.user, answer_option=answer)
-                await database_sync_to_async(new_vote.save())
+                await database_sync_to_async(lambda: new_vote.save())()
 
                 await self.channel_layer.group_send(
                     self.control_group,

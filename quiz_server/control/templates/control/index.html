@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Preguntitas Control</title>
+</head>
+<body>
+    <input id="startGame" type="button" value="Start game"><br><br>
+    {%for i in questions%}
+        <input type="radio" id="nextQuestionInput"value="{{i.id}}">{{i.question_text}}<br>
+    {% endfor %}
+    <input id="nextQuestionButton" type="button" value="Show next question">
+    <input id="showResultButton" type="button" value="Show question's result"><br>
+    <script>
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/consumer_control/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#nextQuestionInput').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#nextQuestionButton').click();
+            }
+        };
+
+        document.querySelector('#nextQuestionButton').onclick = function(e) {
+            const nextQuestionInput = document.querySelector('#nextQuestionInput');
+            const idNextQuestion = nextQuestionInput.value
+            chatSocket.send(JSON.stringify({
+                'type': "nextQuestion",
+                'questionId' : idNextQuestion
+            }));
+        };
+
+        document.querySelector('#showResultButton').onclick = function(e) {
+            const nextQuestionInput = document.querySelector('#nextQuestionInput');
+            const idQuestionResult = nextQuestionInput.value
+            chatSocket.send(JSON.stringify({
+                'type': "showQuestionResult",
+                'questionId' : idQuestionResult
+            }));
+        };
+    </script>
+</body>
+</html>
